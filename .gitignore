@@ -1,0 +1,9 @@
+# macOS system files
+input
+output
+testMaterial
+__pycache__
+.DS_Store
+._.DS_Store
+**/.DS_Store
+._*
