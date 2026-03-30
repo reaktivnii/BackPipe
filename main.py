@@ -2,7 +2,6 @@ from PIL import Image
 from pathlib import Path
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-from unittest.mock import Mock
 import threading
 
 ROOT_DIR = Path(__file__).parent
