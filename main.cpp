@@ -1,34 +1,60 @@
 #include "orchestrator/orchestrator.h"
+#include <unistd.h>
+#include <iostream>
+#include <filesystem>
 
-
-int main() {
+int main(int argc, char* argv[]) {
     Manager mgr;
     std::queue<std::shared_ptr<std::string>> list;
     std::string cfg_path;
+    std::filesystem::path input;
     std::string destination;
+    int threads = 6;
 
-  /*std::string photo1 = "/home/reaktivnii/Projects/BackPipe2.0/examples/DSC04703.png";
-    std::string photo2 = "/home/reaktivnii/Projects/BackPipe2.0/examples/DSC04768.png";
-    std::string photo3 = "/home/reaktivnii/Projects/BackPipe2.0/examples/DSC04790.png";
-    std::string photo4 = "/home/reaktivnii/Projects/BackPipe2.0/examples/DSC04821.png";
-    std::string photo5 = "/home/reaktivnii/Projects/BackPipe2.0/examples/DSC04723.png";
-    std::string photo6 = "/home/reaktivnii/Projects/BackPipe2.0/examples/DSC04743.png";
-    std::string photo7 = "/home/reaktivnii/Projects/BackPipe2.0/examples/DSC04767.png";
-    std::string photo8 = "/home/reaktivnii/Projects/BackPipe2.0/examples/DSC04810.png";
-    std::string photo9 = "/home/reaktivnii/Projects/BackPipe2.0/examples/DSC04824.png";
-    list.push(std::make_shared<std::string>(photo1));
-    list.push(std::make_shared<std::string>(photo2));
-    list.push(std::make_shared<std::string>(photo3));
-    list.push(std::make_shared<std::string>(photo4));
-    list.push(std::make_shared<std::string>(photo5));
-    list.push(std::make_shared<std::string>(photo6));
-    list.push(std::make_shared<std::string>(photo7));
-    list.push(std::make_shared<std::string>(photo8));
-    list.push(std::make_shared<std::string>(photo9)); */
+   int opt;
+   if (argc < 7) {
+       std::cerr << "Not enough arguments! You should give [-c config path] [-i input file or directory of files] [-o output directory] [-t number of threads to use]\n";
+       return 1;
+   }
+   while ((opt = getopt(argc, argv, "c:i:o:t:")) != -1) {
+       switch (opt) {
+            case 'c': cfg_path = optarg; break;
+            case 'i': input = optarg; break;
+            case 'o': destination = optarg; break;
+            case 't': threads = atoi(optarg); break;
+            default: /* ? */
+                std::cerr << "usage: " << argv[0] << 
+                    " [-c config path] [-i input file or directory of files] [-o output directory]\noptional: [-t number of threads to use] (default 6)\n";
+                return 1;
+        }
+   }
+
+   if (std::filesystem::is_directory(input)) {
+       for (auto& entry : std::filesystem::directory_iterator(input)) {
+           if (entry.path().extension() == ".jpg" || entry.path().extension() == ".png") {
+               list.push(std::make_shared<std::string>(entry.path().string()));
+           }
+           else std::cerr << "Unsupported format: " << entry.path().string() << "\n";
+       }
+   }
+   else if (std::filesystem::is_regular_file(input)) {
+       if (input.extension() == ".jpg" || input.extension() == ".png") {
+           list.push(std::make_shared<std::string>(input.string()));
+       }
+       else {
+           std::cerr << "file " << input << " isn't supported";
+           return 1;
+       }
+   }
+   else {
+       std::cerr << "file/directory " << input << " is invalid.";
+       return 1;
+   }
 
     mgr.makeTasks(list, cfg_path, destination);
 
-    mgr.start(6);
+    mgr.start(threads);
 
     mgr.waitForCompletion();
+    return 0;
 }
