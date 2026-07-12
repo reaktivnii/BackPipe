@@ -21,3 +21,6 @@ width=2000
 height=1335  
 format=jpg  
 quality=95  
+
+The amount of these config bits in a single txt file isn't limited.  
+It should be a plain text file.
