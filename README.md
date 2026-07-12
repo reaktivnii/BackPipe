@@ -1,4 +1,4 @@
-BackPipe (Backend Pipeline)
+# BackPipe (Backend Pipeline)
 
 This project exists as a personal tool for batch resizing of photos with a template.
 
@@ -6,7 +6,7 @@ It wants an input file or directory, an output path, path to a config and option
 
 It creates a directory with a config's name at output path, renames every photo to add config's name at the end.
 
-Config uses a simple logic:
+##### Config uses a simple logic:
 
 [config_name]:  
 [should aspect ratio be kept from the original]  
