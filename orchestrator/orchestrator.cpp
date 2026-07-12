@@ -20,7 +20,6 @@ void Manager::convert(Task task) {
             std::cerr << "Failed to load photo " << task.source_file << ": " << stbi_failure_reason() << "\n";
             return;
         }
-        std::cout << "opened " << name << "\n";
 
         x2 = task.width;
         if (x2 <= 0) {
@@ -30,7 +29,6 @@ void Manager::convert(Task task) {
         if (task.save_aspect) {
             float ratio = (float)x / task.width;
             y2 = y / ratio;
-            std::cout << "got " << y2 << " from " << x2 << " for " << name << "\n";
         }
         else y2 = task.height;
         unsigned char* output_pixels = new unsigned char[x2 * y2 * channels];
@@ -48,8 +46,11 @@ void Manager::convert(Task task) {
 
         name.erase(name.find('.'));
         std::filesystem::path new_name = name + "_" + task.name + "." + task.extension;
-        std::string dest = filePath / new_name;
-        std::cout << "made new name " << dest << "\n";
+        std::filesystem::path dest_dir = filePath / std::filesystem::path(task.name);
+        std::string dest = dest_dir / new_name;
+
+        std::error_code ec;
+        std::filesystem::create_directory(dest_dir, ec);
 
         std::ofstream test(dest);
         if (!test) {
@@ -74,8 +75,6 @@ void Manager::convert(Task task) {
         stbi_image_free(data);
         delete[] output_pixels;
         counter--;
-        std::cout << "finished\n";
-        std::cout << counter.load() << "\n";
 }
 
 Manager::Manager() {
@@ -94,7 +93,6 @@ Manager::~Manager() {
 }
 
 void Manager::start(size_t numThreads) {
-    std::cout << counter.load() << "\n";
     for (size_t i = 0; i < numThreads; ++i) {
         workers.emplace_back([this] {
             while (true) { 
@@ -102,7 +100,6 @@ void Manager::start(size_t numThreads) {
             {
               std::lock_guard<std::mutex> lock(file_mtx);
               if (stop || tasks.empty()) {
-                  std::cout << "finishing...\n";
                   return;
               }
               if (!tasks.empty()) {
@@ -170,7 +167,6 @@ void Manager::makeTasks(std::queue<std::shared_ptr<std::string>> queue, std::str
 
     for (const auto& path : paths) {
         for (const auto& config : configs) {
-            std::cout << "Adding " << config.name << " with " << path << "\n";
             Task task;
             task.source_file = *path;
             task.destination = dest;
