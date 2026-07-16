@@ -24,3 +24,7 @@ quality=95
 
 The amount of these config bits in a single txt file isn't limited.  
 It should be a plain text file.
+
+
+
+Image manipulation done with nothings/stb libraries (image, resize2, write)
