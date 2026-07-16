@@ -11,72 +11,6 @@
 #include <fstream>
 #include <algorithm>
 
-void Manager::convert(Task task) {
-        int x, y, channels, x2, y2;
-        std::string name = task.source_file.filename();
-        std::string filePath = task.destination.parent_path();
-        unsigned char* data = stbi_load(task.source_file.c_str(), &x, &y, &channels, 0);
-        if (!data) {
-            std::cerr << "Failed to load photo " << task.source_file << ": " << stbi_failure_reason() << "\n";
-            return;
-        }
-
-        x2 = task.width;
-        if (x2 <= 0) {
-            std::cerr << "Please, use positive numbers for size\n";
-            return;
-        }
-        if (task.save_aspect) {
-            float ratio = (float)x / task.width;
-            y2 = y / ratio;
-        }
-        else y2 = task.height;
-        unsigned char* output_pixels = new unsigned char[x2 * y2 * channels];
-        stbir_resize_uint8_srgb(data, x, y, 0,
-                                output_pixels, x2, y2, 0,
-                                (stbir_pixel_layout)channels);
-        if (output_pixels) std::cout << name << " is resized\n";
-        else {
-            std::cerr << "Failed to resize " << name << ".\n";
-            stbi_image_free(data);
-            delete[] output_pixels;
-            counter--;
-            return;
-        }
-
-        name.erase(name.find('.'));
-        std::filesystem::path new_name = name + "_" + task.name + "." + task.extension;
-        std::filesystem::path dest_dir = filePath / std::filesystem::path(task.name);
-        std::string dest = dest_dir / new_name;
-
-        std::error_code ec;
-        std::filesystem::create_directory(dest_dir, ec);
-
-        std::ofstream test(dest);
-        if (!test) {
-            std::cerr << "Can't write file to: " << dest << "\n";
-            stbi_image_free(data);
-            delete[] output_pixels;
-            counter--;
-            return;
-        }
-        if (task.extension == "jpeg" || task.extension == "jpg") {
-            stbi_write_jpg(dest.c_str(), x2, y2, channels, output_pixels, task.quality); 
-        }
-        else if (task.extension == "png") stbi_write_png(dest.c_str(), x2, y2, channels, output_pixels, 0);
-        else {
-            std::cerr << "Cannot save " << name << ": Wrong file extension\n";
-            stbi_image_free(data);
-            delete[] output_pixels;
-            counter--;
-            return;
-        }
-
-        stbi_image_free(data);
-        delete[] output_pixels;
-        counter--;
-}
-
 Manager::Manager() {
     stop = false;
     counter.store(0);
@@ -87,11 +21,90 @@ Manager::~Manager() {
         std::lock_guard<std::mutex> lock(file_mtx);
         stop = true;
     }
+    // waiting for all threads to finish current tasks
     for (std::thread &worker : workers) {
         if (worker.joinable()) worker.join();
     }
 }
 
+// the main functionality of the whole program
+void Manager::convert(Task task) {
+    // making first pieces of data to transform later and trying to open file
+    int x, y, channels, x2, y2;
+    std::string name = task.source_file.filename();
+    std::string filePath = task.destination.parent_path();
+    unsigned char* data = stbi_load(task.source_file.c_str(), &x, &y, &channels, 0);
+    if (!data) {
+        std::cerr << "Failed to load photo " << task.source_file << ": " << stbi_failure_reason() << "\n";
+        return;
+    }
+
+    // handling size parameters
+    x2 = task.width;
+    if (x2 <= 0) {
+        std::cerr << "Please, use positive numbers for size\n";
+        return;
+    }
+    // getting aspect ratio if required
+    if (task.save_aspect) {
+        float ratio = (float)x / task.width;
+        y2 = y / ratio;
+    }
+    else y2 = task.height;
+
+    // getting memory for the result
+    unsigned char* output_pixels = new unsigned char[x2 * y2 * channels];
+    stbir_resize_uint8_srgb(data, x, y, 0,
+            output_pixels, x2, y2, 0,
+            (stbir_pixel_layout)channels);
+    if (output_pixels) std::cout << name << " is resized\n";
+    else {
+        std::cerr << "Failed to resize " << name << ".\n";
+        stbi_image_free(data);
+        delete[] output_pixels;
+        counter--;
+        return;
+    }
+
+    // making a new filename and path
+    name.erase(name.find('.'));
+    std::filesystem::path new_name = name + "_" + task.name + "." + task.extension;
+    std::filesystem::path dest_dir = filePath / std::filesystem::path(task.name);
+    std::string dest = dest_dir / new_name;
+
+    // making directories with configs' names for a bit more cleanliness, ignore the error if directory exists
+    std::error_code ec;
+    std::filesystem::create_directory(dest_dir, ec);
+
+    // trying the new filepath
+    std::ofstream test(dest);
+    if (!test) {
+        std::cerr << "Can't write file to: " << dest << "\n";
+        stbi_image_free(data);
+        delete[] output_pixels;
+        counter--;
+        return;
+    }
+    // writing the file with required parameters
+    if (task.extension == "jpeg" || task.extension == "jpg") {
+        stbi_write_jpg(dest.c_str(), x2, y2, channels, output_pixels, task.quality); 
+    }
+    else if (task.extension == "png") stbi_write_png(dest.c_str(), x2, y2, channels, output_pixels, 0);
+    else {
+        std::cerr << "Cannot save " << name << ": Wrong file extension\n";
+        stbi_image_free(data);
+        delete[] output_pixels;
+        counter--;
+        return;
+    }
+
+    // after getting memory for result freeing it is mandatory to avoid leaks
+    stbi_image_free(data);
+    delete[] output_pixels;
+    counter--;
+}
+
+// giving a template function to threads
 void Manager::start(size_t numThreads) {
     for (size_t i = 0; i < numThreads; ++i) {
         workers.emplace_back([this] {
@@ -113,12 +126,14 @@ void Manager::start(size_t numThreads) {
     }
 }
 
+// a counter to let main know when threads are done with all tasks
 void Manager::waitForCompletion() {
     while (counter.load() > 0) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
+// sorting input data into tasks for threads' work
 void Manager::makeTasks(std::queue<std::shared_ptr<std::string>> queue, std::string& cfg_path, std::string& dest) { 
     std::ifstream file(cfg_path);
     if (!file) {
@@ -131,21 +146,26 @@ void Manager::makeTasks(std::queue<std::shared_ptr<std::string>> queue, std::str
     std::vector<std::shared_ptr<std::string>> paths;
     Task current;
 
+    // putting file paths into a vector for ease of process
     while (!queue.empty()) {
         paths.push_back(queue.front());
         queue.pop();
     }
 
+    // config application cycle
     std::cout << "reading config...\n";
     while (std::getline(file, line)) {
         if (line.empty()) {
             if (!current.name.empty()) {
+                // if name isn't empty assume there is a config since config always has a name written first
                 configs.push_back(current);
                 current = Task{};
             }
         }
         else {
+            // parsing name
             if (line.find(':') != std::string::npos) current.name.assign(line.begin(), line.end() - 1);
+            // parsing key-value pairs
             if (line.find('=') != std::string::npos) {
                 auto it = std::find(line.begin(), line.end(), '=');
                 if (it != line.end()) {
@@ -163,8 +183,10 @@ void Manager::makeTasks(std::queue<std::shared_ptr<std::string>> queue, std::str
             }
         }
     }
+    // pushing last config into the vector
     if (!current.name.empty()) configs.push_back(current);
 
+    // using two temporary vectors to create a queue of tasks, every path should be paired with every config
     for (const auto& path : paths) {
         for (const auto& config : configs) {
             Task task;

@@ -20,6 +20,7 @@ typedef struct {
     std::filesystem::path source_file;
     std::filesystem::path destination;
 } Task;
+// a single struct to simplify delivery to workers
 
 class Manager {
     private:
