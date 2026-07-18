@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -O2 -Iinclude -msse2
+CXXFLAGS = -std=c++17 -O3 -Iinclude -msse2
 
 TARGET = backpipe
 
