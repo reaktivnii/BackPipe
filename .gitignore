@@ -2,3 +2,5 @@ backpipe
 examples
 compile_commands.json
 *.o
+Makefile
+build
