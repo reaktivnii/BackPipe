@@ -6,6 +6,8 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include <optional>
+#include <condition_variable>
 
 typedef struct {
     int width;
@@ -28,15 +30,17 @@ class Manager {
         std::mutex file_mtx;
         std::queue<Task> tasks;
         std::vector<std::thread> workers;
-        bool stop;
+        std::atomic_bool stop;
         int queue;
         std::atomic_int counter;
+        std::condition_variable cv;
     public:
         Manager();
         ~Manager();
         void start(size_t numThreads);
-        void makeTasks(std::queue<std::shared_ptr<std::string>> queue, std::string& cfg_path, std::string& dest);
-        void waitForCompletion();
+        std::optional<std::vector<Task>> readConfig(std::string& cfg_path);
+        void makeTasks(std::vector<std::string>& paths, std::vector<Task> configs, std::string& dest);
+        void waitForCompletion(std::atomic<bool>& run);
 };
 
 #endif

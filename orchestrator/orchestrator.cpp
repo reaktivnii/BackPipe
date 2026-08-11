@@ -21,6 +21,7 @@ Manager::~Manager() {
         std::lock_guard<std::mutex> lock(file_mtx);
         stop = true;
     }
+    cv.notify_all();
     // waiting for all threads to finish current tasks
     for (std::thread &worker : workers) {
         if (worker.joinable()) worker.join();
@@ -98,7 +99,7 @@ void Manager::convert(Task task) {
         return;
     }
 
-    // after getting memory for result freeing it is mandatory to avoid leaks
+    // after getting memory for result, freeing it is mandatory to avoid leaks
     stbi_image_free(data);
     delete[] output_pixels;
     counter--;
@@ -108,17 +109,21 @@ void Manager::convert(Task task) {
 void Manager::start(size_t numThreads) {
     for (size_t i = 0; i < numThreads; ++i) {
         workers.emplace_back([this] {
-            while (true) { 
+            while (!stop) { 
             Task task;
             {
-              std::lock_guard<std::mutex> lock(file_mtx);
-              if (stop || tasks.empty()) {
+              std::unique_lock<std::mutex> lock(file_mtx);
+
+              cv.wait(lock, [this] {
+                      return !tasks.empty() || stop;
+                      });
+
+              if (stop) {
                   return;
               }
-              if (!tasks.empty()) {
-                  task = tasks.front();
-                  tasks.pop();
-              }
+
+              task = std::move(tasks.front());
+              tasks.pop();
             }
             convert(task);
             }
@@ -127,32 +132,25 @@ void Manager::start(size_t numThreads) {
 }
 
 // a counter to let main know when threads are done with all tasks
-void Manager::waitForCompletion() {
+void Manager::waitForCompletion(std::atomic<bool>& run) {
     while (counter.load() > 0) {
+        if (!run.load()) return;
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
-// sorting input data into tasks for threads' work
-void Manager::makeTasks(std::queue<std::shared_ptr<std::string>> queue, std::string& cfg_path, std::string& dest) { 
+std::optional<std::vector<Task>> Manager::readConfig(std::string& cfg_path) {
+    std::string line;
+    Task current;
+    std::vector<Task> configs;
+
     std::ifstream file(cfg_path);
+    // if there isn't a config returning empty vector
     if (!file) {
         std::cerr << "Cannot open config " << cfg_path << "\n";
-        return;
+        return std::nullopt;
     }
 
-    std::string line;
-    std::vector<Task> configs;
-    std::vector<std::shared_ptr<std::string>> paths;
-    Task current;
-
-    // putting file paths into a vector for ease of process
-    while (!queue.empty()) {
-        paths.push_back(queue.front());
-        queue.pop();
-    }
-
-    // config application cycle
     std::cout << "reading config...\n";
     while (std::getline(file, line)) {
         if (line.empty()) {
@@ -185,12 +183,17 @@ void Manager::makeTasks(std::queue<std::shared_ptr<std::string>> queue, std::str
     }
     // pushing last config into the vector
     if (!current.name.empty()) configs.push_back(current);
+    return configs;
+}
 
-    // using two temporary vectors to create a queue of tasks, every path should be paired with every config
+// sorting input data into tasks for threads' work
+void Manager::makeTasks(std::vector<std::string>& paths, std::vector<Task> configs, std::string& dest) { 
+    // config application cycle
+    // using a temporary vector to create a queue of tasks, every path should be paired with every config
     for (const auto& path : paths) {
         for (const auto& config : configs) {
             Task task;
-            task.source_file = *path;
+            task.source_file = path;
             task.destination = dest;
             task.name = config.name;
             task.width = config.width;
@@ -198,8 +201,13 @@ void Manager::makeTasks(std::queue<std::shared_ptr<std::string>> queue, std::str
             if (!config.save_aspect) task.height = config.height;
             task.extension = config.extension;
             if (config.extension == "jpg" || config.extension == "jpeg") task.quality = config.quality;
-            tasks.push(task);
+            {
+                std::lock_guard<std::mutex> lock(file_mtx);
+                tasks.push(task);
+            }
             counter++;
+            cv.notify_one();
         }
     }
+    paths.clear();
 }
