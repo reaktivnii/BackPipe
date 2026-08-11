@@ -2,6 +2,7 @@
 #include <iostream>
 #include <filesystem>
 #include <unordered_set>
+#include <thread>
 #include <unistd.h>
 #include <sys/inotify.h>
 #include <poll.h>
@@ -44,14 +45,16 @@ void findFiles(std::filesystem::path input, std::vector<std::string>& list) {
     }
 }
 
+
 int main(int argc, char* argv[]) {
     Manager mgr;
     std::vector<std::string> list;
     std::string cfg_path;
     std::filesystem::path input;
     std::string destination;
-    int threads = 6;
     bool isService = false;
+    unsigned int threads = std::thread::hardware_concurrency();
+    if (threads == 0) threads = 6;
 
     signal(SIGTERM, signalHandler);
     signal(SIGINT, signalHandler);
@@ -71,7 +74,9 @@ int main(int argc, char* argv[]) {
     if (argc == 1) {
         std::cout << "usage: " << argv[0] << 
             "[-c config path] [-i input file or directory of files] [-o output directory]\n"
-            "optional: [-t number of threads to use] (default 6)\n";
+            "optional:\n"
+            "[-t number of threads to use] (uses all by default if can find, 6 otherwise)\n"
+            "[-s launch as a service (input dir required)]\n";
         return 0;
     }
 
@@ -124,7 +129,7 @@ int main(int argc, char* argv[]) {
             exit(EXIT_FAILURE);
         }
 
-        int wd = inotify_add_watch(fd, input.c_str(), IN_CLOSE_WRITE | IN_CREATE | IN_MODIFY | IN_MOVED_TO);
+        int wd = inotify_add_watch(fd, input.c_str(), IN_CLOSE_WRITE | IN_MOVED_TO);
         if (wd == -1) {
             perror("watch setup failed");
             exit(EXIT_FAILURE);

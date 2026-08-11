@@ -1,0 +1,16 @@
+build/
+bin/
+examples/
+LICENSE
+docker-compose.yml
+compile_commands.json
+.git/
+.gitignore
+.DS_Store
+*.o
+*.a
+*.so
+*.exe
+*.md
+*.swp
+*.swo

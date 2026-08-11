@@ -1,0 +1,24 @@
+services:
+  backpipe:
+    user: "1000:1000"
+    network_mode: host
+    build: .
+    image: reaktivnii/backpipe:latest
+    container_name: backpipe
+    command: -s -i /input -o /output/ -c /app/config.cfg
+    cpus: '4.0'
+    mem_limit: 10g
+    mem_reservation: 8g
+    volumes:
+      - ./examples/input:/input
+      - ./examples/output:/output
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 10g
+        reservations:
+          cpus: '2.0'
+          memory: 8g
+    restart: unless-stopped
+    tty: true
