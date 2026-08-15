@@ -9,8 +9,8 @@ set(CMAKE_EXE_LINKER_FLAGS "-static")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 add_executable(backpipe 
-    main.cpp 
-    orchestrator/orchestrator.cpp)
+    src/main.cpp 
+    src/orchestrator.cpp)
 
 target_include_directories(backpipe PRIVATE include)
 target_compile_options(backpipe PRIVATE -O2)
