@@ -65,6 +65,7 @@ int main(int argc, char* argv[]) {
         {"input", required_argument, 0, 'i'},
         {"output", required_argument, 0, 'o'},
         {"threads", required_argument, 0, 't'},
+        {"runtest", no_argument, 0, 'r'},
         {0, 0, 0, 0}
     };
 
@@ -82,13 +83,14 @@ int main(int argc, char* argv[]) {
 
     std::cout << "parsing arguments...\n";
     int opt;
-    while ((opt = getopt_long(argc, argv, "c:i:o:t:s", long_opts, &opt_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "c:i:o:t:sr", long_opts, &opt_index)) != -1) {
         switch (opt) {
             case 's': isService = true; break;
             case 'c': cfg_path = optarg; break;
             case 'i': input = optarg; break;
             case 'o': destination = optarg; break;
             case 't': threads = atoi(optarg); break;
+            case 'r': break;
             default: /* ? */
                       std::cerr << "Not enough or wrong arguments! You should give [-c config path] "
                           "[-i input file or directory of files] [-o output directory]\n";
