@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'reaktivnii/backpipe:arm64'
-        DOCKER_CREDENTIALS = credentials('bd10aaf3-1535-4302-95e5-a114b5f46bd9')
+        DOCKER_CREDENTIALS = credentials('docker-hub-creds')
     }
 
     stages {
@@ -22,7 +22,7 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 sh '''
-                echo "$DOCKER_CREDENTIALS" | docker login -u reaktivnii --password-stdin
+                echo "$DOCKER_CREDENTIALS" | docker login -u "$DOCKER_CREDENTIALS" --password-stdin
 
                 docker push $DOCKER_IMAGE
                 
