@@ -1,4 +1,5 @@
 #include "orchestrator.h"
+#include "logs.h"
 #include <iostream>
 #include <filesystem>
 #include <unordered_set>
@@ -9,13 +10,13 @@
 #include <signal.h>
 #include <getopt.h>
 
+std::atomic<bool> isService;
 std::atomic<bool> run = true;
 
 std::unordered_set<std::string> cache;
 
 void signalHandler(int sig) {
     (void)sig;
-    printf("\nGot a signal, stopping...\n");
     run = false;
 }
 
@@ -29,20 +30,16 @@ void findFiles(std::filesystem::path input, std::vector<std::string>& list) {
                     list.push_back(entry.path().string());
                 }
             }
-            else std::cerr << "Unsupported format: " << entry.path().string() << "\n";
+            else logError("Unsupported format: " + entry.path().string());
         }
     }
     else if (std::filesystem::is_regular_file(input)) {
         if (input.extension() == ".jpg" || input.extension() == ".png") {
             list.push_back(input.string());
         }
-        else {
-            std::cerr << "file " << input << " isn't supported";
-        }
+        else logError("file " + input.string() + " isn't supported");
     }
-    else {
-        std::cerr << "file/directory " << input << " is invalid.";
-    }
+    else logError("file/directory " + input.string() + " is invalid.");
 }
 
 
@@ -52,9 +49,9 @@ int main(int argc, char* argv[]) {
     std::string cfg_path;
     std::filesystem::path input;
     std::string destination;
-    bool isService = false;
     unsigned int threads = std::thread::hardware_concurrency();
     if (threads == 0) threads = 6;
+    isService = false;
 
     signal(SIGTERM, signalHandler);
     signal(SIGINT, signalHandler);
@@ -70,7 +67,6 @@ int main(int argc, char* argv[]) {
     };
 
     int opt_index = 0;
-    std::cout << "Initialized successfully\n";
 
     if (argc == 1) {
         std::cout << "usage: " << argv[0] << 
@@ -81,7 +77,6 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    std::cout << "parsing arguments...\n";
     int opt;
     while ((opt = getopt_long(argc, argv, "c:i:o:t:sr", long_opts, &opt_index)) != -1) {
         switch (opt) {
@@ -136,7 +131,6 @@ int main(int argc, char* argv[]) {
             perror("watch setup failed");
             exit(EXIT_FAILURE);
         }
-        std::cout << "Watching " << input << "\n";
 
         char buffer[4096];
         while (run) {
@@ -166,7 +160,7 @@ int main(int argc, char* argv[]) {
 
         inotify_rm_watch(fd, wd);
         close(fd);
-        std::cout << "Stopped the daemon\n";
+        logInfo("Stopped the daemon");
     }
     else mgr.waitForCompletion(run);
     // required to let all threads finish before ending program's work

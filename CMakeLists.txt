@@ -19,7 +19,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 add_executable(backpipe 
     src/main.cpp 
-    src/orchestrator.cpp)
+    src/orchestrator/orchestrator.cpp
+    src/logs/logs.cpp)
 
 target_include_directories(backpipe PRIVATE include)
 target_compile_options(backpipe PRIVATE -O2)

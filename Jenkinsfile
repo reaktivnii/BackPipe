@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'reaktivnii/backpipe:arm64'
+        DOCKER_IMAGE = 'reaktivnii/backpipe:latest'
     }
 
     stages {
@@ -12,9 +12,9 @@ pipeline {
             }
         }
 
-        stage('Build ARM64 Image') {
+        stage('Build Images') {
             steps {
-                sh 'docker buildx build --platform linux/arm64 --network=host -t $DOCKER_IMAGE .'
+                sh 'docker buildx build --platform linux/amd64,linux/arm64 --network=host -t $DOCKER_IMAGE .'
             }
         }
 

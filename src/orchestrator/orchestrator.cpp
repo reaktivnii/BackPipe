@@ -7,6 +7,7 @@
 #include "stb_image_resize2.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#include "logs.h"
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -33,17 +34,17 @@ void Manager::convert(Task task) {
     // making first pieces of data to transform later and trying to open file
     int x, y, channels, x2, y2;
     std::string name = task.source_file.filename();
-    std::string filePath = task.destination.parent_path();
+    std::string filePath = task.destination;
     unsigned char* data = stbi_load(task.source_file.c_str(), &x, &y, &channels, 0);
     if (!data) {
-        std::cerr << "Failed to load photo " << task.source_file << ": " << stbi_failure_reason() << "\n";
+        logError("Failed to load photo " + task.source_file.string() + ": " + stbi_failure_reason());
         return;
     }
 
     // handling size parameters
     x2 = task.width;
     if (x2 <= 0) {
-        std::cerr << "Please, use positive numbers for size\n";
+        logError("Negative numbers aren't valid for size!");
         return;
     }
     // getting aspect ratio if required
@@ -58,9 +59,9 @@ void Manager::convert(Task task) {
     stbir_resize_uint8_srgb(data, x, y, 0,
             output_pixels, x2, y2, 0,
             (stbir_pixel_layout)channels);
-    if (output_pixels) std::cout << name << " is resized\n";
+    if (output_pixels) logInfo(name + " is resized");
     else {
-        std::cerr << "Failed to resize " << name << ".\n";
+        logError("Failed to resize " + name);
         stbi_image_free(data);
         delete[] output_pixels;
         counter--;
@@ -80,7 +81,7 @@ void Manager::convert(Task task) {
     // trying the new filepath
     std::ofstream test(dest);
     if (!test) {
-        std::cerr << "Can't write file to: " << dest << "\n";
+        logError("Can't write file to: " + dest);
         stbi_image_free(data);
         delete[] output_pixels;
         counter--;
@@ -92,7 +93,7 @@ void Manager::convert(Task task) {
     }
     else if (task.extension == "png") stbi_write_png(dest.c_str(), x2, y2, channels, output_pixels, 0);
     else {
-        std::cerr << "Cannot save " << name << ": Wrong file extension\n";
+        logError("Cannot save " + name + ": Wrong file extension");
         stbi_image_free(data);
         delete[] output_pixels;
         counter--;
@@ -147,11 +148,11 @@ std::optional<std::vector<Task>> Manager::readConfig(std::string& cfg_path) {
     std::ifstream file(cfg_path);
     // if there isn't a config returning empty vector
     if (!file) {
-        std::cerr << "Cannot open config " << cfg_path << "\n";
+        logError("Cannot open config " + cfg_path);
         return std::nullopt;
     }
 
-    std::cout << "reading config...\n";
+    logInfo("reading config...");
     while (std::getline(file, line)) {
         if (line.empty()) {
             if (!current.name.empty()) {

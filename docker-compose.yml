@@ -1,24 +1,32 @@
 services:
   backpipe:
     user: "1000:1000"
-    network_mode: host
-    build: .
-    image: reaktivnii/backpipe:latest
+    image: reaktivnii/backpipe:arm64
     container_name: backpipe
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     command: -s -i /input -o /output/ -c /app/config.cfg
-    cpus: '4.0'
-    mem_limit: 10g
-    mem_reservation: 8g
+    cpus: '1.0'
+    mem_limit: 4g
+    mem_reservation: 2g
     volumes:
-      - ./examples/input:/input
-      - ./examples/output:/output
+      - ./input:/input
+      - ./output:/output
     deploy:
       resources:
         limits:
-          cpus: '4.0'
-          memory: 10g
+          cpus: '1.0'
+          memory: 4g
         reservations:
-          cpus: '2.0'
-          memory: 8g
+          cpus: '0.8'
+          memory: 2g
     restart: unless-stopped
     tty: true
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 300 --label-enable backpipe
