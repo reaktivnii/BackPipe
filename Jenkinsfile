@@ -14,7 +14,7 @@ pipeline {
 
         stage('Build Images') {
             steps {
-                sh 'docker buildx build --platform linux/amd64,linux/arm64 --network=host -t $DOCKER_IMAGE .'
+                sh 'docker buildx build --platform linux/amd64,linux/arm64 --network=host --no-cache -t $DOCKER_IMAGE .'
             }
         }
 
