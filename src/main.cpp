@@ -1,5 +1,5 @@
-#include "orchestrator.h"
-#include "logs.h"
+#include "orchestrator/orchestrator.h"
+#include "logs/logs.h"
 #include <iostream>
 #include <filesystem>
 #include <unordered_set>
