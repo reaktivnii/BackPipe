@@ -1,25 +1,25 @@
 services:
   backpipe:
     user: "1000:1000"
-    image: reaktivnii/backpipe:arm64
+    image: reaktivnii/backpipe:latest
     container_name: backpipe
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-    command: -s -i /input -o /output/ -c /app/config.cfg
-    cpus: '1.0'
-    mem_limit: 4g
-    mem_reservation: 2g
+    command: -s -i /input -o /output -c /app/config.cfg
+    cpus: '4.0'
+    mem_limit: 10g
+    mem_reservation: 4g
     volumes:
       - ./input:/input
       - ./output:/output
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 4g
-        reservations:
-          cpus: '0.8'
-          memory: 2g
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+        loki-external-labels: "container_name=backpipe,service=backpipe"
+        labels: "job"
+        env: "env"
+        keep-file: "false"
     restart: unless-stopped
     tty: true
 
@@ -30,3 +30,26 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     command: --interval 300 --label-enable backpipe
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/loki-config.yaml
+    cpus: '0.5'
+    mem_limit: 1g
+    mem_reservation: 256m
+    command: -config.file=/etc/loki/loki-config.yaml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    cpus: '0.5'
+    mem_limit: 512m
+    mem_reservation: 128m
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
