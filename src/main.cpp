@@ -106,9 +106,6 @@ int main(int argc, char* argv[]) {
 
     findFiles(input, list);
 
-    // have to make a switch case for CLI / Service functioning
-    // then teach manager to gracefully stop
-    // then docker shenanigans
     auto cfgs = mgr.readConfig(cfg_path);
     if (cfgs.has_value()) {
         // giving manager required data to make tasks for threads
@@ -119,6 +116,7 @@ int main(int argc, char* argv[]) {
     // launching n threads
     mgr.start(threads);
 
+    // maybe remove this part to only compile on linux systems
     if (isService) {
         int fd = inotify_init();
         if (fd == -1) {
@@ -152,6 +150,7 @@ int main(int argc, char* argv[]) {
                 n = read(fd, buffer, sizeof(buffer)); 
                 if (n == -1 && errno != EAGAIN) perror("read failed");
 
+                // Have to change this logic to not call the functions on every event
                 findFiles(input, list);
                 mgr.makeTasks(list, cfgs.value(), destination);
             }

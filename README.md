@@ -6,12 +6,29 @@ It wants an input file or directory, an output path, path to a config and option
 
 It creates a directory with a config's name at output path, renames every photo to add config's name at the end.
 
+*Please note that currently the main CLI is linux exclusive, since it requires inotify*
+*If you want to use it on Mac or Windows, please go to the DevOps branch, since it uses docker*
+
+---
+
+#### How to install:
+
+In root directory of the project, use CMake to compile it, for example:
+```
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
+
 ---
 
 #### How to use it:
 
 The binary file will be created in ./bin directory, use it like this:  
+```
 backpipe -c yourconfig.txt -i input -o output/  
+```
 optionally you can add -t for the amount of threads to use.  
   
 It also can act as a service, use flag -s and give it an input ***directory*** (along with other main parameters) to launch it as one,
@@ -39,15 +56,17 @@ it will wait for inotify actions in the input dir (just copy or move photos to t
 [if it's a jpg, quality from 0 to 100]  
 
 example:  
+```
 save_aspect=false  
 width=2000  
 height=1335  
 format=jpg  
 quality=95  
+```
 
 The amount of these config bits in a single txt file isn't limited.  
 It should be a plain text file.
 
+---
 
-
-Image manipulation done with nothings/stb libraries (image, resize2, write)
+*Image manipulation done with nothings/stb libraries (image, resize2, write)*
