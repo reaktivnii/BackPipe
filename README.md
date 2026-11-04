@@ -8,6 +8,12 @@ It creates a directory with a config's name at output path, renames every photo 
 
 ---
 
+This branch is made to separate the tool from clutter of DevOps tools
+Currently I cannot guarantee correct funcitoning of CI/CD, since docker-build didn't work properly in my environment
+the development of this branch has stopped on attempts at connecting Loki to Grafana and trying to collect logs
+
+---
+
 #### How to use it:
 
 The binary file will be created in ./bin directory, use it like this:  
