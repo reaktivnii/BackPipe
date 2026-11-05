@@ -55,8 +55,9 @@ it will wait for inotify actions in the input dir (just copy or move photos to t
 [what format the result should be, supports png and jpg]  
 [if it's a jpg, quality from 0 to 100]  
 
-example:  
+for example
 ```
+example:  
 save_aspect=false  
 width=2000  
 height=1335  
