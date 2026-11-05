@@ -6,8 +6,8 @@ It wants an input file or directory, an output path, path to a config and option
 
 It creates a directory with a config's name at output path, renames every photo to add config's name at the end.
 
-*Please note that currently the main CLI is linux exclusive, since it requires inotify*
-*If you want to use it on Mac or Windows, please go to the DevOps branch, since it uses docker*
+*Please note that currently the main CLI is linux exclusive, since it requires inotify.*
+*If you want to use it on Mac or Windows, please go to the DevOps branch for docker-powered version*
 
 ---
 
