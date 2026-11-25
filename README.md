@@ -7,25 +7,31 @@ It wants an input file or directory, an output path, path to a config and option
 It creates a directory with a config's name at output path, renames every photo to add config's name at the end.
 
 *Please note that currently the main CLI is linux exclusive, since it requires inotify.*
-*If you want to use it on Mac or Windows, please go to the DevOps branch for docker-powered version*
+*If you want to use it on MacOS or Windows, please go to the DevOps branch for docker-powered version*
 
 ---
 
 #### How to install:
 
-In root directory of the project, use CMake to compile it, for example:
+Copy project from the github page:
+```
+git clone https://github.com/reaktivnii/BackPipe
+```
+
+Use CMake to compile it, for example:
 ```
 mkdir build
 cd build
 cmake ..
 cmake --build .
 ```
+A binary file will be createad at root/bin/
 
 ---
 
 #### How to use it:
 
-The binary file will be created in ./bin directory, use it like this:  
+Use the binary file like this:  
 ```
 backpipe -c yourconfig.txt -i input -o output/  
 ```

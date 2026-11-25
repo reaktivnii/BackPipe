@@ -6,3 +6,4 @@ Makefile
 build
 input
 output
+loki-data
