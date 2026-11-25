@@ -1,4 +1,18 @@
 services:
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/loki-config.yaml
+      - ./loki-data:/loki
+    cpus: '0.5'
+    mem_limit: 1g
+    mem_reservation: 256m
+    command: -config.file=/etc/loki/loki-config.yaml -target=all
+    networks: [obs]
+
   backpipe:
     user: "1000:1000"
     image: reaktivnii/backpipe:latest
@@ -15,13 +29,13 @@ services:
     logging:
       driver: loki
       options:
-        loki-url: "http://loki:3100/loki/api/v1/push"
+        loki-url: "http://localhost:3100/loki/api/v1/push"
         loki-external-labels: "container_name=backpipe,service=backpipe"
         labels: "job"
         env: "env"
         keep-file: "false"
     restart: unless-stopped
-    tty: true
+    networks: [obs]
 
   watchtower:
     image: containrrr/watchtower
@@ -29,19 +43,8 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 300 --label-enable backpipe
-
-  loki:
-    image: grafana/loki:latest
-    container_name: loki
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./loki-config.yaml:/etc/loki/loki-config.yaml
-    cpus: '0.5'
-    mem_limit: 1g
-    mem_reservation: 256m
-    command: -config.file=/etc/loki/loki-config.yaml
+    command: --interval 300 --label-enable
+    networks: [obs]
 
   grafana:
     image: grafana/grafana:latest
@@ -53,3 +56,8 @@ services:
     mem_reservation: 128m
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks: [obs]
+
+networks:
+  obs:
+    driver: bridge
