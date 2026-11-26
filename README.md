@@ -11,7 +11,6 @@ It creates a directory with a config's name at output path, renames every photo 
 
 ---
 
-<<<<<<< HEAD
 #### How to install:
 
 In root directory of the project, use CMake to compile it, for example:
@@ -30,8 +29,6 @@ the development of this branch has stopped on attempts at connecting Loki to Gra
 
 ---
 
-=======
->>>>>>> parent of 2d0257a (redacted readme to make clear what this branch is)
 #### How to use it:
 
 The binary file will be created in ./bin directory, use it like this:  
