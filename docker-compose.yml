@@ -56,6 +56,8 @@ services:
     mem_reservation: 128m
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana-data:/var/lib/grafana
     networks: [obs]
 
 networks:
