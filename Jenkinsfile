@@ -2,6 +2,9 @@ pipeline {
     agent any
 
     environment {
+        HTTP_PROXY = 'http://127.0.0.1:20171'
+        HTTPS_PROXY = 'http://127.0.0.1:20171'
+        NO_PROXY = 'http://127.0.0.1'
         DOCKER_IMAGE = 'reaktivnii/backpipe:latest'
     }
 
@@ -14,7 +17,13 @@ pipeline {
 
         stage('Build Images') {
             steps {
-                sh 'docker buildx build --platform linux/amd64,linux/arm64 --network=host --no-cache -t $DOCKER_IMAGE .'
+                sh '''
+                docker buildx build --platform linux/amd64,linux/arm64 --network=host --no-cache \
+                --build-arg HTTP_PROXY=$HTTP_PROXY \
+                --build-arg HTTPS_PROXY=$HTTPS_PROXY \
+                --build-arg NO_PROXY=$NO_PROXY \
+                -t $DOCKER_IMAGE .'
+                '''
             }
         }
 
