@@ -15,6 +15,16 @@ pipeline {
             }
         }
 
+        stage('Log in') {
+            withCredentials([usernamePassword(
+                        credentialsId: 'docker-hub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                        )]) {
+                sh 'echo $DOCKER_PASS | docker login -u "$DOCKER_USER" --password-stdin'
+            }
+        }
+
         stage('Build Images') {
             steps {
                 sh '''
@@ -22,25 +32,9 @@ pipeline {
                 --build-arg HTTP_PROXY=$HTTP_PROXY \
                 --build-arg HTTPS_PROXY=$HTTPS_PROXY \
                 --build-arg NO_PROXY=$NO_PROXY \
-                -t $DOCKER_IMAGE .
+                -t $DOCKER_IMAGE . \
+                --push .
                 '''
-            }
-        }
-
-        stage('Push to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(
-                credentialsId: 'docker-hub-creds',
-                usernameVariable: 'DOCKER_USER',
-                passwordVariable: 'DOCKER_PASS'
-                )]) {
-                sh '''
-                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-
-                docker push $DOCKER_IMAGE
-                
-                '''
-                }
             }
         }
     }
